@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+option go_package = "github.com/Gasper3/inventory-grpc";
+
+package inventory;
+
+service Inventory {
+    rpc AddItem(InventoryRequest) returns (SimpleResponse) {}
+    rpc GetItems(Empty) returns (ItemsResponse) {}
+}
+
+message Empty {}
+
+message InventoryRequest {
+    Item item = 1;
+}
+
+message SimpleResponse {
+    string msg = 1;
+    int32 status = 2;
+}
+
+message ItemsResponse {
+    repeated Item items=1;
+}
+
+message Item {
+    string name=1;
+    int32 quantity=2;
+}
+
