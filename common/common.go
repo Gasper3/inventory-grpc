@@ -10,7 +10,6 @@ type Container interface {
 	Add(*pb.Item) error
 	GetItemsAsString() string
 	GetItems() ([]*pb.Item, error)
-    GetItem(string) (*pb.Item, error)
     IncrementQuantity(string, int32) error
 }
 
