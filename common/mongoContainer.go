@@ -3,6 +3,7 @@ package common
 import (
 	"context"
 	"fmt"
+	"log"
 
 	pb "github.com/Gasper3/inventory-grpc/rpc"
 	"go.mongodb.org/mongo-driver/bson"
@@ -20,6 +21,7 @@ func (c *MongoContainer) connect() (*mongo.Client, error) {
 	opts := options.Client().
 		ApplyURI("mongodb://admin:pass@127.0.0.1:27017/").
 		SetServerAPIOptions(serverAPI)
+
 	client, err := mongo.Connect(context.TODO(), opts)
 	return client, err
 }
@@ -36,9 +38,10 @@ func (c *MongoContainer) getClient() (*mongo.Client, error) {
 
 	client, err := c.connect()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to connect to mongo -> %v", err)
 	}
 
+	c.mongoClient = client
 	return client, nil
 }
 
@@ -91,3 +94,23 @@ func (c *MongoContainer) GetItems() ([]*pb.Item, error) {
 	}
 	return items, nil
 }
+
+func (c *MongoContainer) IncrementQuantity(name string, val int32) error {
+	collection, err := c.getCollection("items")
+	if err != nil {
+		return err
+	}
+
+	_, err = collection.UpdateOne(
+		context.TODO(),
+		bson.D{{"name", name}},
+		bson.D{{"$inc", bson.D{{"quantity", val}}}},
+	)
+	if err != nil {
+		log.Printf("Failed to increment quantity -> %v", err)
+		return fmt.Errorf("Failed to increment quantity -> %v", err)
+	}
+
+	return nil
+}
+

@@ -49,6 +49,18 @@ func (s *server) GetItems(context context.Context, request *pb.Empty) (*pb.Items
 	return &pb.ItemsResponse{Items: items}, nil
 }
 
+func (s *server) AddQuantity(
+	context context.Context,
+	request *pb.AddQuantityRequest,
+) (*pb.SimpleResponse, error) {
+	err := s.container.IncrementQuantity(request.GetName(), request.GetQuantity())
+	if err != nil {
+		log.Printf("Error during AddQuantity -> %v", err)
+		return nil, err
+	}
+	return &pb.SimpleResponse{Msg: "Quantity updated", Status: 200}, nil
+}
+
 func main() {
 	flag.Parse()
 

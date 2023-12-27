@@ -26,17 +26,23 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	response, err := c.AddItem(ctx, &pb.InventoryRequest{
-		Item: &pb.Item{Name: "Siekiera", Quantity: 98123},
-	})
-	if err != nil {
-		log.Fatalf("Failed to add thing: %v", err)
-	}
-	log.Printf("Response: %v | Status %v", response.GetMsg(), response.GetStatus())
+	// response, err := c.AddItem(ctx, &pb.InventoryRequest{
+	// 	Item: &pb.Item{Name: "Siekiera", Quantity: 98123},
+	// })
+	// if err != nil {
+	// 	log.Fatalf("Failed to add thing: %v", err)
+	// }
+	// log.Printf("Response: %v | Status %v", response.GetMsg(), response.GetStatus())
+	//
+	// r, err := c.GetItems(context.TODO(), &pb.Empty{})
+	// items := r.GetItems()
+	// for _, item := range items {
+	// 	fmt.Println(item)
+	// }
 
-	r, err := c.GetItems(context.TODO(), &pb.Empty{})
-	items := r.GetItems()
-	for _, item := range items {
-		fmt.Println(item)
+	response, err := c.AddQuantity(ctx, &pb.AddQuantityRequest{Name: "Siekiera", Quantity: 12})
+	if err != nil {
+		fmt.Println(err)
 	}
+	fmt.Println(response)
 }

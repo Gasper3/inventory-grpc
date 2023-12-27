@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 type InventoryClient interface {
 	AddItem(ctx context.Context, in *InventoryRequest, opts ...grpc.CallOption) (*SimpleResponse, error)
 	GetItems(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ItemsResponse, error)
+	AddQuantity(ctx context.Context, in *AddQuantityRequest, opts ...grpc.CallOption) (*SimpleResponse, error)
 }
 
 type inventoryClient struct {
@@ -52,12 +53,22 @@ func (c *inventoryClient) GetItems(ctx context.Context, in *Empty, opts ...grpc.
 	return out, nil
 }
 
+func (c *inventoryClient) AddQuantity(ctx context.Context, in *AddQuantityRequest, opts ...grpc.CallOption) (*SimpleResponse, error) {
+	out := new(SimpleResponse)
+	err := c.cc.Invoke(ctx, "/inventory.Inventory/AddQuantity", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InventoryServer is the server API for Inventory service.
 // All implementations must embed UnimplementedInventoryServer
 // for forward compatibility
 type InventoryServer interface {
 	AddItem(context.Context, *InventoryRequest) (*SimpleResponse, error)
 	GetItems(context.Context, *Empty) (*ItemsResponse, error)
+	AddQuantity(context.Context, *AddQuantityRequest) (*SimpleResponse, error)
 	mustEmbedUnimplementedInventoryServer()
 }
 
@@ -70,6 +81,9 @@ func (UnimplementedInventoryServer) AddItem(context.Context, *InventoryRequest) 
 }
 func (UnimplementedInventoryServer) GetItems(context.Context, *Empty) (*ItemsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetItems not implemented")
+}
+func (UnimplementedInventoryServer) AddQuantity(context.Context, *AddQuantityRequest) (*SimpleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddQuantity not implemented")
 }
 func (UnimplementedInventoryServer) mustEmbedUnimplementedInventoryServer() {}
 
@@ -120,6 +134,24 @@ func _Inventory_GetItems_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Inventory_AddQuantity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddQuantityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InventoryServer).AddQuantity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/inventory.Inventory/AddQuantity",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InventoryServer).AddQuantity(ctx, req.(*AddQuantityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Inventory_ServiceDesc is the grpc.ServiceDesc for Inventory service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -134,6 +166,10 @@ var Inventory_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetItems",
 			Handler:    _Inventory_GetItems_Handler,
+		},
+		{
+			MethodName: "AddQuantity",
+			Handler:    _Inventory_AddQuantity_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

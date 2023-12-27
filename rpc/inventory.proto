@@ -7,12 +7,18 @@ package inventory;
 service Inventory {
     rpc AddItem(InventoryRequest) returns (SimpleResponse) {}
     rpc GetItems(Empty) returns (ItemsResponse) {}
+    rpc AddQuantity(AddQuantityRequest) returns (SimpleResponse) {}
 }
 
 message Empty {}
 
 message InventoryRequest {
     Item item = 1;
+}
+
+message AddQuantityRequest {
+    string name=1;
+    int32 quantity=2;
 }
 
 message SimpleResponse {
@@ -28,4 +34,5 @@ message Item {
     string name=1;
     int32 quantity=2;
 }
+
 
