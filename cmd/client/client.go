@@ -8,7 +8,9 @@ import (
 
 	pb "github.com/Gasper3/inventory-grpc/rpc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
 func main() {
@@ -42,7 +44,12 @@ func main() {
 
 	response, err := c.AddQuantity(ctx, &pb.AddQuantityRequest{Name: "Siekiera", Quantity: 12})
 	if err != nil {
-		fmt.Println(err)
+		errStatus, _ := status.FromError(err)
+		fmt.Println("Status msg", errStatus.Message())
+		fmt.Println("Status code", errStatus.Code())
+		if codes.NotFound == errStatus.Code() {
+			fmt.Println("siema not found error")
+		}
 	}
-	fmt.Println(response)
+	fmt.Println("Response |", response)
 }

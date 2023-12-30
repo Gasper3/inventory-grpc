@@ -9,6 +9,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type MongoContainer struct {
@@ -23,12 +25,18 @@ func (c *MongoContainer) connect() (*mongo.Client, error) {
 		SetServerAPIOptions(serverAPI)
 
 	client, err := mongo.Connect(context.TODO(), opts)
-	return client, err
+    if err != nil {
+        return nil, status.Errorf(codes.Internal, "Failed to connect to MongoDB: %v", err)
+    }
+	return client, nil
 }
 
 func (c *MongoContainer) disconnect() error {
 	err := c.mongoClient.Disconnect(context.TODO())
-	return err
+    if err != nil {
+        return status.Errorf(codes.Internal, "Failed to disconnect from MongoDB: %v", err) 
+    }
+    return nil
 }
 
 func (c *MongoContainer) getClient() (*mongo.Client, error) {
@@ -38,7 +46,7 @@ func (c *MongoContainer) getClient() (*mongo.Client, error) {
 
 	client, err := c.connect()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to connect to mongo -> %v", err)
+        return nil, err
 	}
 
 	c.mongoClient = client
@@ -113,4 +121,3 @@ func (c *MongoContainer) IncrementQuantity(name string, val int32) error {
 
 	return nil
 }
-

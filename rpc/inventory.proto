@@ -23,7 +23,6 @@ message AddQuantityRequest {
 
 message SimpleResponse {
     string msg = 1;
-    int32 status = 2;
 }
 
 message ItemsResponse {

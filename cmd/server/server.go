@@ -10,6 +10,7 @@ import (
 	"github.com/Gasper3/inventory-grpc/common"
 	pb "github.com/Gasper3/inventory-grpc/rpc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 )
 
 var (
@@ -31,13 +32,13 @@ func (s *server) AddItem(
 	err := s.container.Add(t)
 	if err != nil {
 		log.Printf("Error while adding new item: %v", err)
-		return &pb.SimpleResponse{Status: 400, Msg: fmt.Sprintf("Added: %v", t.Name)}, nil
+		return nil, err
 	}
 
 	log.Printf("Received new thing: %v", t.Name)
 	fmt.Print("All items\n", s.container.GetItemsAsString())
 
-	return &pb.SimpleResponse{Status: 200, Msg: fmt.Sprintf("Added: %v", t.Name)}, nil
+	return &pb.SimpleResponse{Msg: fmt.Sprintf("Added: %v", t.Name)}, nil
 }
 
 func (s *server) GetItems(context context.Context, request *pb.Empty) (*pb.ItemsResponse, error) {
@@ -49,6 +50,11 @@ func (s *server) GetItems(context context.Context, request *pb.Empty) (*pb.Items
 	return &pb.ItemsResponse{Items: items}, nil
 }
 
+func wrapError(err error) error {
+	statusErr, _ := status.FromError(err)
+	return statusErr.Err()
+}
+
 func (s *server) AddQuantity(
 	context context.Context,
 	request *pb.AddQuantityRequest,
@@ -58,7 +64,7 @@ func (s *server) AddQuantity(
 		log.Printf("Error during AddQuantity -> %v", err)
 		return nil, err
 	}
-	return &pb.SimpleResponse{Msg: "Quantity updated", Status: 200}, nil
+	return &pb.SimpleResponse{Msg: "Quantity updated"}, nil
 }
 
 func main() {
