@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	pb "github.com/Gasper3/inventory-grpc/rpc"
+	"github.com/Gasper3/inventory-grpc/rpc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -15,7 +15,7 @@ import (
 
 type MongoContainer struct {
 	mongoClient *mongo.Client
-	Items       []pb.Item
+	Items       []rpc.Item
 }
 
 func (c *MongoContainer) connect() (*mongo.Client, error) {
@@ -25,18 +25,18 @@ func (c *MongoContainer) connect() (*mongo.Client, error) {
 		SetServerAPIOptions(serverAPI)
 
 	client, err := mongo.Connect(context.TODO(), opts)
-    if err != nil {
-        return nil, status.Errorf(codes.Internal, "Failed to connect to MongoDB: %v", err)
-    }
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to connect to MongoDB: %v", err)
+	}
 	return client, nil
 }
 
 func (c *MongoContainer) disconnect() error {
 	err := c.mongoClient.Disconnect(context.TODO())
-    if err != nil {
-        return status.Errorf(codes.Internal, "Failed to disconnect from MongoDB: %v", err) 
-    }
-    return nil
+	if err != nil {
+		return status.Errorf(codes.Internal, "Failed to disconnect from MongoDB: %v", err)
+	}
+	return nil
 }
 
 func (c *MongoContainer) getClient() (*mongo.Client, error) {
@@ -46,7 +46,7 @@ func (c *MongoContainer) getClient() (*mongo.Client, error) {
 
 	client, err := c.connect()
 	if err != nil {
-        return nil, err
+		return nil, err
 	}
 
 	c.mongoClient = client
@@ -62,7 +62,7 @@ func (c *MongoContainer) getCollection(name string) (*mongo.Collection, error) {
 	return client.Database("inventory").Collection("items"), nil
 }
 
-func (c *MongoContainer) Add(i *pb.Item) error {
+func (c *MongoContainer) Add(i *rpc.Item) error {
 	collection, err := c.getCollection("items")
 	if err != nil {
 		return err
@@ -84,7 +84,7 @@ func (c *MongoContainer) GetItemsAsString() string {
 	return result
 }
 
-func (c *MongoContainer) GetItems() ([]*pb.Item, error) {
+func (c *MongoContainer) GetItems() ([]*rpc.Item, error) {
 	collection, err := c.getCollection("items")
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func (c *MongoContainer) GetItems() ([]*pb.Item, error) {
 		return nil, err
 	}
 
-	var items []*pb.Item
+	var items []*rpc.Item
 	err = cur.All(context.TODO(), &items)
 	if err != nil {
 		return nil, err

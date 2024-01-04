@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	pb "github.com/Gasper3/inventory-grpc/rpc"
+	"github.com/Gasper3/inventory-grpc/rpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -23,7 +23,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	c := pb.NewInventoryClient(conn)
+	c := rpc.NewInventoryClient(conn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
@@ -42,7 +42,7 @@ func main() {
 	// 	fmt.Println(item)
 	// }
 
-	response, err := c.AddQuantity(ctx, &pb.AddQuantityRequest{Name: "Siekiera", Quantity: 12})
+	response, err := c.AddQuantity(ctx, &rpc.AddQuantityRequest{Name: "Siekiera", Quantity: 12})
 	if err != nil {
 		errStatus, _ := status.FromError(err)
 		fmt.Println("Status msg", errStatus.Message())

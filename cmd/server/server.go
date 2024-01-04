@@ -8,25 +8,26 @@ import (
 	"net"
 
 	"github.com/Gasper3/inventory-grpc/common"
-	pb "github.com/Gasper3/inventory-grpc/rpc"
+	"github.com/Gasper3/inventory-grpc/rpc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 var (
 	port   = flag.Int("port", 8000, "Server port")
-	things = []*pb.Item{}
+	things = []*rpc.Item{}
 )
 
 type server struct {
-	pb.UnimplementedInventoryServer
+	rpc.UnimplementedInventoryServer
 	container common.Container
 }
 
 func (s *server) AddItem(
 	context context.Context,
-	request *pb.InventoryRequest,
-) (*pb.SimpleResponse, error) {
+	request *rpc.InventoryRequest,
+) (*rpc.SimpleResponse, error) {
 	t := request.GetItem()
 
 	err := s.container.Add(t)
@@ -38,16 +39,16 @@ func (s *server) AddItem(
 	log.Printf("Received new thing: %v", t.Name)
 	fmt.Print("All items\n", s.container.GetItemsAsString())
 
-	return &pb.SimpleResponse{Msg: fmt.Sprintf("Added: %v", t.Name)}, nil
+	return &rpc.SimpleResponse{Msg: fmt.Sprintf("Added: %v", t.Name)}, nil
 }
 
-func (s *server) GetItems(context context.Context, request *pb.Empty) (*pb.ItemsResponse, error) {
+func (s *server) GetItems(context context.Context, request *rpc.Empty) (*rpc.ItemsResponse, error) {
 	items, err := s.container.GetItems()
 	if err != nil {
 		log.Printf("Error occured while fetching items: %v", err)
 		return nil, err
 	}
-	return &pb.ItemsResponse{Items: items}, nil
+	return &rpc.ItemsResponse{Items: items}, nil
 }
 
 func wrapError(err error) error {
@@ -57,14 +58,19 @@ func wrapError(err error) error {
 
 func (s *server) AddQuantity(
 	context context.Context,
-	request *pb.AddQuantityRequest,
-) (*pb.SimpleResponse, error) {
+	request *rpc.AddQuantityRequest,
+) (*rpc.SimpleResponse, error) {
+    if request.GetQuantity() <= 0 {
+        // this if is just for my explration of errors
+        return nil, status.Error(codes.InvalidArgument, "Quantity must be greater than 0")
+    }
+
 	err := s.container.IncrementQuantity(request.GetName(), request.GetQuantity())
 	if err != nil {
 		log.Printf("Error during AddQuantity -> %v", err)
 		return nil, err
 	}
-	return &pb.SimpleResponse{Msg: "Quantity updated"}, nil
+	return &rpc.SimpleResponse{Msg: "Quantity updated"}, nil
 }
 
 func main() {
@@ -77,7 +83,7 @@ func main() {
 
 	s := grpc.NewServer()
 	container := &common.MongoContainer{}
-	pb.RegisterInventoryServer(s, &server{container: container})
+	rpc.RegisterInventoryServer(s, &server{container: container})
 
 	log.Printf("Server listens on %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {

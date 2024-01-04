@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/Gasper3/inventory-grpc";
+option go_package = "./rpc";
 
 package inventory;
 
