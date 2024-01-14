@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 
 	"github.com/Gasper3/inventory-grpc/common"
@@ -32,45 +32,49 @@ func (s *server) AddItem(
 
 	err := s.container.Add(t)
 	if err != nil {
-		log.Printf("Error while adding new item: %v", err)
+		slog.Error("Error while adding new item", "originalError", err)
 		return nil, err
 	}
 
-	log.Printf("Received new thing: %v", t.Name)
-	fmt.Print("All items\n", s.container.GetItemsAsString())
+	slog.Info("Received new item", "name", t.Name)
 
 	return &rpc.SimpleResponse{Msg: fmt.Sprintf("Added: %v", t.Name)}, nil
 }
 
 func (s *server) GetItems(context context.Context, request *rpc.Empty) (*rpc.ItemsResponse, error) {
+    slog.Info("GetItems called")
 	items, err := s.container.GetItems()
 	if err != nil {
-		log.Printf("Error occured while fetching items: %v", err)
+		slog.Error("Error occured while fetching items", "originalErr", err)
 		return nil, err
 	}
 	return &rpc.ItemsResponse{Items: items}, nil
 }
 
-func wrapError(err error) error {
-	statusErr, _ := status.FromError(err)
-	return statusErr.Err()
-}
-
 func (s *server) AddQuantity(
-	context context.Context,
+	ctx context.Context,
 	request *rpc.AddQuantityRequest,
 ) (*rpc.SimpleResponse, error) {
-    if request.GetQuantity() <= 0 {
-        // this if is just for my explration of errors
-        return nil, status.Error(codes.InvalidArgument, "Quantity must be greater than 0")
-    }
+	if request.GetQuantity() <= 0 {
+		return nil, status.Error(codes.InvalidArgument, "Quantity must be greater than 0")
+	}
 
 	err := s.container.IncrementQuantity(request.GetName(), request.GetQuantity())
 	if err != nil {
-		log.Printf("Error during AddQuantity -> %v", err)
+		slog.Error("Error during AddQuantity", "originalErr", err)
 		return nil, err
 	}
 	return &rpc.SimpleResponse{Msg: "Quantity updated"}, nil
+}
+
+func unaryInterceptor(
+	ctx context.Context,
+	req any,
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler,
+) (resp any, err error) {
+	slog.Info("Unary interceptor", "method", info.FullMethod)
+	return handler(ctx, req)
 }
 
 func main() {
@@ -78,15 +82,16 @@ func main() {
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", *port))
 	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+		slog.Error("Failed to listen", "originalErr", err)
 	}
 
-	s := grpc.NewServer()
+	s := grpc.NewServer(grpc.UnaryInterceptor(unaryInterceptor))
+
 	container := &common.MongoContainer{}
 	rpc.RegisterInventoryServer(s, &server{container: container})
 
-	log.Printf("Server listens on %v", lis.Addr())
+	slog.Info(fmt.Sprintf("Server listens on %v", lis.Addr()))
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
+		slog.Error("Failed to serve", "originalErr", err)
 	}
 }
