@@ -1,34 +1,55 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 
-	pb "github.com/Gasper3/inventory-grpc/rpc"
+	"github.com/Gasper3/inventory-grpc/rpc"
 )
 
 type Container interface {
-	Add(*pb.Item) error
+	Add(*rpc.Item) error
 	GetItemsAsString() string
-	GetItems() ([]*pb.Item, error)
-    IncrementQuantity(string, int32) error
+	GetItems() ([]*rpc.Item, error)
+	IncrementQuantity(string, int32) error
+}
+
+func NewInMemoryContainer() *InMemoryContainer {
+	return &InMemoryContainer{Items: make(map[string]*rpc.Item)}
 }
 
 type InMemoryContainer struct {
-	things []*pb.Item
+	Items map[string]*rpc.Item
 }
 
-func (c *InMemoryContainer) Add(t *pb.Item) error {
-	c.things = append(c.things, t)
+func (c *InMemoryContainer) Add(i *rpc.Item) error {
+	c.Items[i.GetName()] = i
 	return nil
 }
 
 func (c *InMemoryContainer) GetItemsAsString() string {
 	result := ""
-	for _, t := range c.things {
+	for _, t := range c.Items {
 		result += fmt.Sprint(t) + "\n"
 	}
 	return result
 }
 
-func (c *InMemoryContainer) GetItems() {
+func (c *InMemoryContainer) GetItems() ([]*rpc.Item, error) {
+	result := []*rpc.Item{}
+	for _, v := range c.Items {
+		result = append(result, v)
+	}
+	return result, nil
+}
+
+func (c *InMemoryContainer) IncrementQuantity(name string, n int32) error {
+	i, ok := c.Items[name]
+	if !ok {
+		return errors.New(fmt.Sprintf("Item %v does not exist", name))
+	}
+
+	i.Quantity += n
+
+	return nil
 }

@@ -7,63 +7,19 @@ import (
 
 	"github.com/Gasper3/inventory-grpc/rpc"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
-type MongoContainer struct {
-	mongoClient *mongo.Client
-	Items       []rpc.Item
-}
-
-func (c *MongoContainer) connect() (*mongo.Client, error) {
-	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
-	opts := options.Client().
-		ApplyURI("mongodb://admin:pass@127.0.0.1:27017/").
-		SetServerAPIOptions(serverAPI)
-
-	client, err := mongo.Connect(context.TODO(), opts)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to connect to MongoDB: %v", err)
-	}
-	return client, nil
-}
-
-func (c *MongoContainer) disconnect() error {
-	err := c.mongoClient.Disconnect(context.TODO())
-	if err != nil {
-		return status.Errorf(codes.Internal, "Failed to disconnect from MongoDB: %v", err)
-	}
+func initMongo() error {
 	return nil
 }
 
-func (c *MongoContainer) getClient() (*mongo.Client, error) {
-	if c.mongoClient != nil {
-		return c.mongoClient, nil
-	}
-
-	client, err := c.connect()
-	if err != nil {
-		return nil, err
-	}
-
-	c.mongoClient = client
-	return client, nil
-}
-
-func (c *MongoContainer) getCollection(name string) (*mongo.Collection, error) {
-	client, err := c.getClient()
-	if err != nil {
-		return nil, err
-	}
-
-	return client.Database("inventory").Collection("items"), nil
+type MongoContainer struct {
+	mongoClient MongoClient
+	Items       []rpc.Item
 }
 
 func (c *MongoContainer) Add(i *rpc.Item) error {
-	collection, err := c.getCollection("items")
+	collection, err := c.mongoClient.GetCollection("items")
 	if err != nil {
 		return err
 	}
@@ -85,7 +41,7 @@ func (c *MongoContainer) GetItemsAsString() string {
 }
 
 func (c *MongoContainer) GetItems() ([]*rpc.Item, error) {
-	collection, err := c.getCollection("items")
+	collection, err := c.mongoClient.GetCollection("items")
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +60,7 @@ func (c *MongoContainer) GetItems() ([]*rpc.Item, error) {
 }
 
 func (c *MongoContainer) IncrementQuantity(name string, val int32) error {
-	collection, err := c.getCollection("items")
+	collection, err := c.mongoClient.GetCollection("items")
 	if err != nil {
 		return err
 	}
