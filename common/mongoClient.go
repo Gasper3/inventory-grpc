@@ -12,7 +12,7 @@ import (
 const MongoUrl = "mongodb://admin:pass@127.0.0.1:27017/"
 
 type MongoClient struct {
-    client *mongo.Client
+	client *mongo.Client
 }
 
 func (c *MongoClient) Connect() (*mongo.Client, error) {
@@ -56,5 +56,5 @@ func (c *MongoClient) GetCollection(name string) (*mongo.Collection, error) {
 		return nil, err
 	}
 
-	return client.Database("inventory").Collection("items"), nil
+	return client.Database("inventory").Collection(name), nil
 }

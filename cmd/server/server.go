@@ -1,81 +1,24 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log/slog"
 	"net"
+	"os"
+	"time"
 
 	"github.com/Gasper3/inventory-grpc/common"
 	"github.com/Gasper3/inventory-grpc/rpc"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/reflection"
 )
 
 var (
-	port   = flag.Int("port", 8000, "Server port")
-	things = []*rpc.Item{}
+	port = flag.Int("port", 8000, "Server port")
 )
 
-type server struct {
-	rpc.UnimplementedInventoryServer
-	container common.Container
-}
-
-func (s *server) AddItem(
-	context context.Context,
-	request *rpc.InventoryRequest,
-) (*rpc.SimpleResponse, error) {
-	t := request.GetItem()
-
-	err := s.container.Add(t)
-	if err != nil {
-		slog.Error("Error while adding new item", "originalError", err)
-		return nil, err
-	}
-
-	slog.Info("Received new item", "name", t.Name)
-
-	return &rpc.SimpleResponse{Msg: fmt.Sprintf("Added: %v", t.Name)}, nil
-}
-
-func (s *server) GetItems(context context.Context, request *rpc.Empty) (*rpc.ItemsResponse, error) {
-    slog.Info("GetItems called")
-	items, err := s.container.GetItems()
-	if err != nil {
-		slog.Error("Error occured while fetching items", "originalErr", err)
-		return nil, err
-	}
-	return &rpc.ItemsResponse{Items: items}, nil
-}
-
-func (s *server) AddQuantity(
-	ctx context.Context,
-	request *rpc.AddQuantityRequest,
-) (*rpc.SimpleResponse, error) {
-	if request.GetQuantity() <= 0 {
-		return nil, status.Error(codes.InvalidArgument, "Quantity must be greater than 0")
-	}
-
-	err := s.container.IncrementQuantity(request.GetName(), request.GetQuantity())
-	if err != nil {
-		slog.Error("Error during AddQuantity", "originalErr", err)
-		return nil, err
-	}
-	return &rpc.SimpleResponse{Msg: "Quantity updated"}, nil
-}
-
-func unaryInterceptor(
-	ctx context.Context,
-	req any,
-	info *grpc.UnaryServerInfo,
-	handler grpc.UnaryHandler,
-) (resp any, err error) {
-	slog.Info("Unary interceptor", "method", info.FullMethod)
-	return handler(ctx, req)
-}
+const tokenDuration = 30 * time.Minute
 
 func main() {
 	flag.Parse()
@@ -85,10 +28,23 @@ func main() {
 		slog.Error("Failed to listen", "originalErr", err)
 	}
 
-	s := grpc.NewServer(grpc.UnaryInterceptor(unaryInterceptor))
+	secretKey, ok := os.LookupEnv(common.SecretKeyName)
+	if !ok {
+		slog.Warn("Using default secretKey. It's recommended to create `INVENTORY_SECRET` env variable")
+		secretKey = "default-secret-key"
+	}
 
-	container := &common.MongoContainer{}
-	rpc.RegisterInventoryServer(s, &server{container: container})
+    jwtManager := common.NewJWTManager(secretKey, tokenDuration)
+    methodsRoles := map[string][]string{
+        "/inventory.Inventory/AddQuantity": {"admin"},
+    }
+    authInterceptor := common.NewAuthInterceptor(*jwtManager, methodsRoles)
+
+	s := grpc.NewServer(grpc.UnaryInterceptor(authInterceptor.Unary()))
+
+	rpc.RegisterAuthServer(s, common.NewAuthServer(jwtManager))
+	rpc.RegisterInventoryServer(s, common.NewInventoryServer())
+	reflection.Register(s)
 
 	slog.Info(fmt.Sprintf("Server listens on %v", lis.Addr()))
 	if err := s.Serve(lis); err != nil {

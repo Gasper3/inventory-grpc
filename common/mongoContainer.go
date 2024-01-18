@@ -13,12 +13,12 @@ func initMongo() error {
 	return nil
 }
 
-type MongoContainer struct {
+type MongoItemsContainer struct {
 	mongoClient MongoClient
 	Items       []rpc.Item
 }
 
-func (c *MongoContainer) Add(i *rpc.Item) error {
+func (c *MongoItemsContainer) Add(i *rpc.Item) error {
 	collection, err := c.mongoClient.GetCollection("items")
 	if err != nil {
 		return err
@@ -27,7 +27,7 @@ func (c *MongoContainer) Add(i *rpc.Item) error {
 	return err
 }
 
-func (c *MongoContainer) GetItemsAsString() string {
+func (c *MongoItemsContainer) GetItemsAsString() string {
 	items, err := c.GetItems()
 	if err != nil {
 		return ""
@@ -40,7 +40,7 @@ func (c *MongoContainer) GetItemsAsString() string {
 	return result
 }
 
-func (c *MongoContainer) GetItems() ([]*rpc.Item, error) {
+func (c *MongoItemsContainer) GetItems() ([]*rpc.Item, error) {
 	collection, err := c.mongoClient.GetCollection("items")
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (c *MongoContainer) GetItems() ([]*rpc.Item, error) {
 	return items, nil
 }
 
-func (c *MongoContainer) IncrementQuantity(name string, val int32) error {
+func (c *MongoItemsContainer) IncrementQuantity(name string, val int32) error {
 	collection, err := c.mongoClient.GetCollection("items")
 	if err != nil {
 		return err
@@ -76,4 +76,24 @@ func (c *MongoContainer) IncrementQuantity(name string, val int32) error {
 	}
 
 	return nil
+}
+
+func (c *MongoItemsContainer) Get(name string) (*rpc.Item, error) {
+    collection, err := c.mongoClient.GetCollection("items")
+    if err != nil {
+        return nil, err
+    }
+
+    result := collection.FindOne(context.TODO(), bson.D{{"name", name}})
+    if err := result.Err(); err != nil {
+        return nil, err
+    }
+
+    var item *rpc.Item
+    err = result.Decode(&item)
+    if err != nil {
+        return nil, err
+    }
+
+    return item, nil
 }
