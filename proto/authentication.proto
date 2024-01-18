@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+option go_package = "./rpc";
+
+package authentication;
+
+service Auth {
+    rpc GetToken(TokenRequest) returns (TokenResponse);
+}
+
+message TokenRequest {
+    string username = 1;
+    string password = 2;
+}
+
+message TokenResponse {
+    string token = 1;
+}
+
