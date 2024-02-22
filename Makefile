@@ -7,3 +7,8 @@ server:
 client:
 	go run ./cmd/client/client.go
 
+compose-up:
+	docker compose up -d
+
+compose-down:
+	docker compose down
