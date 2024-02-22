@@ -14,7 +14,7 @@ func TestGetItems(t *testing.T) {
 	container := common.NewInMemoryContainer()
 	container.Items = items
 
-	server := server{container: container}
+	server := common.InventoryServer{Container: container}
 
 	itemsResponse, _ := server.GetItems(context.TODO(), &rpc.Empty{})
 

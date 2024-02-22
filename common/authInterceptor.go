@@ -2,7 +2,6 @@ package common
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
@@ -40,10 +39,10 @@ func (ai *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 }
 
 func (ai *AuthInterceptor) authorize(ctx context.Context, method string) error {
-	roles, ok := ai.methodsRoles[method]
-	if !ok {
-		return nil
-	}
+	roles, rolesOk := ai.methodsRoles[method]
+    if slices.Contains[[]string](roles, "all") {
+        return nil
+    }
 
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
@@ -65,8 +64,7 @@ func (ai *AuthInterceptor) authorize(ctx context.Context, method string) error {
 		return status.Error(codes.Unauthenticated, "Token is invalid")
 	}
 
-    fmt.Println(roles, claims.Role)
-	if !slices.Contains[[]string](roles, claims.Role) {
+	if rolesOk && !slices.Contains[[]string](roles, claims.Role) {
 		return status.Error(codes.PermissionDenied, "You don't have permissions to this method")
 	}
 

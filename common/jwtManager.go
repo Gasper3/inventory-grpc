@@ -8,11 +8,11 @@ import (
 )
 
 func NewJWTManager(secretKey string, tokenDuration time.Duration) *JwtManager {
-	return &JwtManager{secretKey: secretKey, duration: tokenDuration}
+	return &JwtManager{SecretKey: secretKey, Duration: tokenDuration}
 }
 type JwtManager struct {
-	secretKey string
-	duration  time.Duration
+	SecretKey string
+	Duration  time.Duration
 }
 
 type UserClaims struct {
@@ -24,13 +24,13 @@ type UserClaims struct {
 func (m *JwtManager) GenerateKey(user *User) (string, error) {
 	claims := UserClaims{
         StandardClaims: jwt.StandardClaims{
-            ExpiresAt: time.Now().Add(m.duration).Unix(),
+            ExpiresAt: time.Now().Add(m.Duration).Unix(),
         },
 		Username: user.Username,
         Role: user.Role,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(m.secretKey))
+	return token.SignedString([]byte(m.SecretKey))
 }
 
 func (m *JwtManager) Verify(token string) (*UserClaims, error) {
@@ -42,7 +42,7 @@ func (m *JwtManager) Verify(token string) (*UserClaims, error) {
 			if !ok {
 				return nil, fmt.Errorf("Invalid signing method")
 			}
-			return []byte(m.secretKey), nil
+			return []byte(m.SecretKey), nil
 		},
 	)
 	if err != nil {

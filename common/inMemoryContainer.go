@@ -47,3 +47,7 @@ func (c *InMemoryContainer) IncrementQuantity(name string, n int32) error {
 	return nil
 }
 
+func (c *InMemoryContainer) Get(name string) (*rpc.Item, error) {
+    // TODO: implement
+    return nil, nil
+}

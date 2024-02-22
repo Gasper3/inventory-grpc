@@ -13,12 +13,12 @@ import (
 
 func NewInventoryServer() *InventoryServer {
 	container := &MongoItemsContainer{}
-    return &InventoryServer{container: container}
+    return &InventoryServer{Container: container}
 }
 
 type InventoryServer struct {
 	rpc.UnimplementedInventoryServer
-	container ItemsContainer
+	Container ItemsContainer
 }
 
 func (s *InventoryServer) AddItem(
@@ -27,7 +27,7 @@ func (s *InventoryServer) AddItem(
 ) (*rpc.SimpleResponse, error) {
 	t := request.GetItem()
 
-	err := s.container.Add(t)
+	err := s.Container.Add(t)
 	if err != nil {
 		slog.Error("Error while adding new item", "originalError", err)
 		return nil, err
@@ -39,7 +39,7 @@ func (s *InventoryServer) AddItem(
 }
 
 func (s *InventoryServer) GetItems(context context.Context, request *rpc.Empty) (*rpc.ItemsResponse, error) {
-	items, err := s.container.GetItems()
+	items, err := s.Container.GetItems()
 	if err != nil {
 		slog.Error("Error occured while fetching items", "originalErr", err)
 		return nil, err
@@ -55,7 +55,7 @@ func (s *InventoryServer) AddQuantity(
 		return nil, status.Error(codes.InvalidArgument, "Quantity must be greater than 0")
 	}
 
-	err := s.container.IncrementQuantity(request.GetName(), request.GetQuantity())
+	err := s.Container.IncrementQuantity(request.GetName(), request.GetQuantity())
 	if err != nil {
 		slog.Error("Error during AddQuantity", "originalErr", err)
 		return nil, err

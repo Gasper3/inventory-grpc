@@ -16,6 +16,11 @@ import (
 
 var (
 	port = flag.Int("port", 8000, "Server port")
+	methodsRoles = map[string][]string{
+		"/inventory.Inventory/AddQuantity": {"admin"},
+		"/inventory.Inventory/GetItems": {"admin"},
+		"/authentication.Auth/GetToken": {"all"},
+	}
 )
 
 const tokenDuration = 30 * time.Minute
@@ -30,15 +35,12 @@ func main() {
 
 	secretKey, ok := os.LookupEnv(common.SecretKeyName)
 	if !ok {
-		slog.Warn("Using default secretKey. It's recommended to create `INVENTORY_SECRET` env variable")
+		slog.Warn(fmt.Sprintf("Using default secretKey. It's recommended to create `%s` env variable", common.SecretKeyName))
 		secretKey = "default-secret-key"
 	}
 
-    jwtManager := common.NewJWTManager(secretKey, tokenDuration)
-    methodsRoles := map[string][]string{
-        "/inventory.Inventory/AddQuantity": {"admin"},
-    }
-    authInterceptor := common.NewAuthInterceptor(*jwtManager, methodsRoles)
+	jwtManager := common.NewJWTManager(secretKey, tokenDuration)
+	authInterceptor := common.NewAuthInterceptor(*jwtManager, methodsRoles)
 
 	s := grpc.NewServer(grpc.UnaryInterceptor(authInterceptor.Unary()))
 
