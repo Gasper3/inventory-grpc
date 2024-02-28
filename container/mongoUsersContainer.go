@@ -13,20 +13,20 @@ type MongoUsersContainer struct {
 }
 
 func (c *MongoUsersContainer) Get(username string) (*auth.User, error) {
-    collection, err := c.MongoClient.GetCollection("users")
-    if err != nil {
-        return nil, err
-    }
-    result := collection.FindOne(context.TODO(), bson.D{{"username", username}})
-    if err := result.Err(); err != nil {
-        return nil, err
-    }
+	collection, err := c.MongoClient.GetCollection("users")
+	if err != nil {
+		return nil, err
+	}
+	result := collection.FindOne(context.TODO(), bson.D{{"username", username}})
+	if err := result.Err(); err != nil {
+		return nil, err
+	}
 
-    var user *auth.User
-    result.Decode(&user)
-    return user, nil
+	var user *auth.User
+	result.Decode(&user)
+	return user, nil
 }
 
 func (c *MongoUsersContainer) Add(user *auth.User) error {
-    return fmt.Errorf("Function Add not implemented")
+	return fmt.Errorf("Function Add not implemented")
 }

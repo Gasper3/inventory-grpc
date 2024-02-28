@@ -11,10 +11,9 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-
 func NewInventoryServer() *InventoryServer {
 	container := &container.MongoItemsContainer{}
-    return &InventoryServer{Container: container}
+	return &InventoryServer{Container: container}
 }
 
 type InventoryServer struct {
@@ -63,4 +62,3 @@ func (s *InventoryServer) AddQuantity(
 	}
 	return &rpc.SimpleResponse{Msg: "Quantity updated"}, nil
 }
-

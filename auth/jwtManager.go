@@ -10,6 +10,7 @@ import (
 func NewJWTManager(secretKey string, tokenDuration time.Duration) *JwtManager {
 	return &JwtManager{SecretKey: secretKey, Duration: tokenDuration}
 }
+
 type JwtManager struct {
 	SecretKey string
 	Duration  time.Duration
@@ -18,16 +19,16 @@ type JwtManager struct {
 type UserClaims struct {
 	jwt.StandardClaims
 	Username string `json:"username"`
-    Role string `json:"role"`
+	Role     string `json:"role"`
 }
 
 func (m *JwtManager) GenerateKey(user *User) (string, error) {
 	claims := UserClaims{
-        StandardClaims: jwt.StandardClaims{
-            ExpiresAt: time.Now().Add(m.Duration).Unix(),
-        },
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(m.Duration).Unix(),
+		},
 		Username: user.Username,
-        Role: user.Role,
+		Role:     user.Role,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(m.SecretKey))
@@ -51,8 +52,8 @@ func (m *JwtManager) Verify(token string) (*UserClaims, error) {
 
 	claims, ok := jwtToken.Claims.(*UserClaims)
 	if !ok {
-        return nil, fmt.Errorf("Invalid token claims")
+		return nil, fmt.Errorf("Invalid token claims")
 	}
 
-    return claims, nil
+	return claims, nil
 }

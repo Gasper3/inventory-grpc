@@ -7,7 +7,7 @@ import (
 
 type Container[T any] interface {
 	Add(*T) error
-    Get(string) (*T, error)
+	Get(string) (*T, error)
 }
 
 type ItemsContainer interface {
@@ -19,5 +19,5 @@ type ItemsContainer interface {
 }
 
 type UsersContainer interface {
-    Container[auth.User]
+	Container[auth.User]
 }

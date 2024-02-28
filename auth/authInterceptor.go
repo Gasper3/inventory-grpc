@@ -39,9 +39,9 @@ func (ai *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 
 func (ai *AuthInterceptor) authorize(ctx context.Context, method string) error {
 	roles, rolesOk := ai.methodsRoles[method]
-    if slices.Contains[[]string](roles, "all") {
-        return nil
-    }
+	if slices.Contains[[]string](roles, "all") {
+		return nil
+	}
 
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
