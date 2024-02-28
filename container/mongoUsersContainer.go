@@ -1,18 +1,19 @@
-package common
+package container
 
 import (
 	"context"
 	"fmt"
 
+	"github.com/Gasper3/inventory-grpc/auth"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 type MongoUsersContainer struct {
-	mongoClient MongoClient
+	MongoClient MongoClient
 }
 
-func (c *MongoUsersContainer) Get(username string) (*User, error) {
-    collection, err := c.mongoClient.GetCollection("users")
+func (c *MongoUsersContainer) Get(username string) (*auth.User, error) {
+    collection, err := c.MongoClient.GetCollection("users")
     if err != nil {
         return nil, err
     }
@@ -21,11 +22,11 @@ func (c *MongoUsersContainer) Get(username string) (*User, error) {
         return nil, err
     }
 
-    var user *User
+    var user *auth.User
     result.Decode(&user)
     return user, nil
 }
 
-func (c *MongoUsersContainer) Add(user *User) error {
+func (c *MongoUsersContainer) Add(user *auth.User) error {
     return fmt.Errorf("Function Add not implemented")
 }

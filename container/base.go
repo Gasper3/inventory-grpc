@@ -1,10 +1,9 @@
-package common
+package container
 
 import (
+	"github.com/Gasper3/inventory-grpc/auth"
 	"github.com/Gasper3/inventory-grpc/rpc"
 )
-
-const SecretKeyName = "INVENTORY_SECRET"
 
 type Container[T any] interface {
 	Add(*T) error
@@ -20,6 +19,5 @@ type ItemsContainer interface {
 }
 
 type UsersContainer interface {
-    Container[User]
+    Container[auth.User]
 }
-

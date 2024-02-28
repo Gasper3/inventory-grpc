@@ -1,35 +1,26 @@
-package common
+package service
 
 import (
 	"context"
 	"fmt"
 	"log/slog"
 
+	"github.com/Gasper3/inventory-grpc/auth"
+	"github.com/Gasper3/inventory-grpc/container"
 	"github.com/Gasper3/inventory-grpc/rpc"
-	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-type User struct {
-	Username       string
-	HashedPassword string
-	Role           string
-}
-
-func (u *User) checkPassword(password string) error {
-	return bcrypt.CompareHashAndPassword([]byte(u.HashedPassword), []byte(password))
-}
-
-func NewAuthServer(jwtManager *JwtManager) *AuthServer {
-	c := &MongoUsersContainer{mongoClient: MongoClient{}}
+func NewAuthServer(jwtManager *auth.JwtManager) *AuthServer {
+	c := &container.MongoUsersContainer{MongoClient: container.MongoClient{}}
 	return &AuthServer{UserContainer: c, JwtManager: jwtManager}
 }
 
 type AuthServer struct {
 	rpc.UnimplementedAuthServer
-	UserContainer Container[User]
-	JwtManager    *JwtManager
+	UserContainer container.Container[auth.User]
+	JwtManager    *auth.JwtManager
 }
 
 func (s *AuthServer) GetToken(ctx context.Context, request *rpc.TokenRequest) (*rpc.TokenResponse, error) {
@@ -41,7 +32,7 @@ func (s *AuthServer) GetToken(ctx context.Context, request *rpc.TokenRequest) (*
 		return nil, status.Error(codes.Unauthenticated, "Wrong username")
 	}
 
-	err = user.checkPassword(request.GetPassword())
+	err = user.CheckPassword(request.GetPassword())
 	if err != nil {
 		slog.Error("Error while checking password", "originalErr", err)
 		return nil, status.Error(codes.Unauthenticated, "Wrong password")

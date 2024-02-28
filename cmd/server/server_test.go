@@ -4,17 +4,18 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Gasper3/inventory-grpc/common"
+	"github.com/Gasper3/inventory-grpc/container"
 	"github.com/Gasper3/inventory-grpc/rpc"
+	"github.com/Gasper3/inventory-grpc/service"
 )
 
 func TestGetItems(t *testing.T) {
 	items := map[string]*rpc.Item{"axe": {Name: "axe", Quantity: 1}}
 
-	container := common.NewInMemoryContainer()
+	container := container.NewInMemoryContainer()
 	container.Items = items
 
-	server := common.InventoryServer{Container: container}
+	server := service.InventoryServer{Container: container}
 
 	itemsResponse, _ := server.GetItems(context.TODO(), &rpc.Empty{})
 

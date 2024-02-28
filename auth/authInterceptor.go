@@ -1,4 +1,4 @@
-package common
+package auth
 
 import (
 	"context"
@@ -28,7 +28,6 @@ func (ai *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (any, error) {
-		// slog.Info("Unary interceptor", "method", info.FullMethod)
 		err := ai.authorize(ctx, info.FullMethod)
 		if err != nil {
 			return nil, err

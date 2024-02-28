@@ -1,10 +1,11 @@
-package common
+package service
 
 import (
 	"context"
 	"fmt"
 	"log/slog"
 
+	"github.com/Gasper3/inventory-grpc/container"
 	"github.com/Gasper3/inventory-grpc/rpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -12,13 +13,13 @@ import (
 
 
 func NewInventoryServer() *InventoryServer {
-	container := &MongoItemsContainer{}
+	container := &container.MongoItemsContainer{}
     return &InventoryServer{Container: container}
 }
 
 type InventoryServer struct {
 	rpc.UnimplementedInventoryServer
-	Container ItemsContainer
+	Container container.ItemsContainer
 }
 
 func (s *InventoryServer) AddItem(
