@@ -12,3 +12,6 @@ compose-up:
 
 compose-down:
 	docker compose down
+
+test:
+	go test ./...
