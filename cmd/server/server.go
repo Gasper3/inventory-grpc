@@ -12,6 +12,7 @@ import (
 	"github.com/Gasper3/inventory-grpc/rpc"
 	"github.com/Gasper3/inventory-grpc/service"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -46,7 +47,12 @@ func main() {
 	jwtManager := auth.NewJWTManager(secretKey, tokenDuration)
 	authInterceptor := auth.NewAuthInterceptor(*jwtManager, methodsRoles)
 
-	s := grpc.NewServer(grpc.UnaryInterceptor(authInterceptor.Unary()))
+    creds, err := credentials.NewServerTLSFromFile("cert/server-cert.pem", "cert/server-key.pem")
+    if err != nil {
+        slog.Error("Failed to create credentials", "originalErr", err)
+    }
+
+	s := grpc.NewServer(grpc.UnaryInterceptor(authInterceptor.Unary()), grpc.Creds(creds))
 
 	rpc.RegisterAuthServer(s, service.NewAuthServer(jwtManager))
 	rpc.RegisterInventoryServer(s, service.NewInventoryServer())
