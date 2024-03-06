@@ -8,48 +8,57 @@ import (
 
 	"github.com/Gasper3/inventory-grpc/rpc"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
-func main() {
+func createConn() *grpc.ClientConn {
+	creds, err := credentials.NewClientTLSFromFile("cert/ca-cert.pem", "")
+	if err != nil {
+		log.Fatalf("Failed to create credentials: %v", err)
+	}
+
 	conn, err := grpc.Dial(
 		"127.0.0.1:8000",
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithTransportCredentials(creds),
 	)
 	if err != nil {
 		log.Fatalf("Failed to connect to gRPC server: %v", err)
 	}
-	defer conn.Close()
+	return conn
+}
 
-	c := rpc.NewInventoryClient(conn)
+func getToken(conn *grpc.ClientConn, ctx context.Context) string {
+	ac := rpc.NewAuthClient(conn)
+	resp, err := ac.GetToken(ctx, &rpc.TokenRequest{Username: "admin", Password: "pass"})
+	if err != nil {
+		log.Fatalf("Failed to get token: %v", err)
+	}
+
+	token := resp.GetToken()
+	return token
+}
+
+func main() {
+	conn := createConn()
+	defer conn.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	// response, err := c.AddItem(ctx, &pb.InventoryRequest{
-	// 	Item: &pb.Item{Name: "Siekiera", Quantity: 98123},
-	// })
-	// if err != nil {
-	// 	log.Fatalf("Failed to add thing: %v", err)
-	// }
-	// log.Printf("Response: %v | Status %v", response.GetMsg(), response.GetStatus())
-	//
-	// r, err := c.GetItems(context.TODO(), &pb.Empty{})
-	// items := r.GetItems()
-	// for _, item := range items {
-	// 	fmt.Println(item)
-	// }
+	c := rpc.NewInventoryClient(conn)
 
-	response, err := c.AddQuantity(ctx, &rpc.AddQuantityRequest{Name: "Siekiera", Quantity: 12})
+	token := getToken(conn, ctx)
+	md := metadata.Pairs("Authorization", fmt.Sprintf("Bearer %v", token))
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
+	// response, err := c.AddQuantity(ctx, &rpc.AddQuantityRequest{Name: "Siekiera", Quantity: 12})
+	response, err := c.GetItems(ctx, &rpc.Empty{})
 	if err != nil {
 		errStatus, _ := status.FromError(err)
 		fmt.Println("Status msg", errStatus.Message())
 		fmt.Println("Status code", errStatus.Code())
-		if codes.NotFound == errStatus.Code() {
-			fmt.Println("siema not found error")
-		}
 	}
 	fmt.Println("Response |", response)
 }
