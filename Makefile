@@ -15,3 +15,7 @@ compose-down:
 
 test:
 	go test ./...
+
+cert-gen:
+	cd cert; ./gen.sh
+

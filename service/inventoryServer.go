@@ -62,3 +62,22 @@ func (s *InventoryServer) AddQuantity(
 	}
 	return &rpc.SimpleResponse{Msg: "Quantity updated"}, nil
 }
+
+func (s *InventoryServer) Search(request *rpc.SearchRequest, stream rpc.Inventory_SearchServer) error {
+    ctx := context.TODO()
+    err := s.Container.FindStream(ctx, request, func(foundItem *rpc.Item) error {
+        err := stream.Send(&rpc.SearchResponse{Item: foundItem})
+        if err != nil {
+            slog.Error("Error while sending back to stream", "originalErr", err)
+            return err
+        }
+
+        return nil
+
+    })
+    if err != nil {
+        slog.Error("Error in FindStream", "originalErr", err)
+        return err
+    }
+    return nil
+}

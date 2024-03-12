@@ -1,6 +1,8 @@
 package container
 
 import (
+	"context"
+
 	"github.com/Gasper3/inventory-grpc/auth"
 	"github.com/Gasper3/inventory-grpc/rpc"
 )
@@ -16,6 +18,7 @@ type ItemsContainer interface {
 	GetItemsAsString() string
 	GetItems() ([]*rpc.Item, error)
 	IncrementQuantity(string, int32) error
+    FindStream(context.Context, *rpc.SearchRequest, func(*rpc.Item) error) error
 }
 
 type UsersContainer interface {

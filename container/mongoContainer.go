@@ -97,3 +97,35 @@ func (c *MongoItemsContainer) Get(name string) (*rpc.Item, error) {
 
 	return item, nil
 }
+
+func (c *MongoItemsContainer) FindStream(ctx context.Context, filter *rpc.SearchRequest, found func(*rpc.Item) error) error {
+	collection, err := c.mongoClient.GetCollection("items")
+	if err != nil {
+		return err
+	}
+
+	cur, err := collection.Find(ctx, bson.M{
+		"$and": bson.A{
+			bson.M{"name": filter.GetName()},
+			bson.M{"quantity": bson.M{"$lte": filter.GetMaxQuantity()}},
+			bson.M{"quantity": bson.M{"$gte": filter.GetMinQuantity()}},
+		},
+	})
+	if err != nil {
+		return err
+	}
+	for cur.Next(ctx) {
+		var item rpc.Item
+		err := cur.Decode(&item)
+		if err != nil {
+			return err
+		}
+
+		err = found(&item)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
