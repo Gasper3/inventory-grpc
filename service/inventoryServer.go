@@ -45,7 +45,7 @@ func (s *InventoryServer) GetItems(
 	items, err := s.Container.GetItems(ctx)
 	if err != nil {
 		slog.Error("Error occured while fetching items", "originalErr", err)
-        return nil, status.Errorf(codes.Internal, "Error while fetching items")
+		return nil, status.Errorf(codes.Internal, "Error while fetching items")
 	}
 	return &rpc.ItemsResponse{Items: items}, nil
 }
@@ -64,7 +64,7 @@ func (s *InventoryServer) AddQuantity(
 	err := s.Container.IncrementQuantity(ctx, request.GetName(), request.GetQuantity())
 	if err != nil {
 		slog.Error("Error during AddQuantity", "originalErr", err)
-        return nil, status.Errorf(codes.Internal, "Error while adding quantity")
+		return nil, status.Errorf(codes.Internal, "Error while adding quantity")
 	}
 	return &rpc.SimpleResponse{Msg: "Quantity updated"}, nil
 }
