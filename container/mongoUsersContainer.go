@@ -12,12 +12,12 @@ type MongoUsersContainer struct {
 	MongoClient MongoClient
 }
 
-func (c *MongoUsersContainer) Get(username string) (*auth.User, error) {
+func (c *MongoUsersContainer) Get(ctx context.Context, username string) (*auth.User, error) {
 	collection, err := c.MongoClient.GetCollection("users")
 	if err != nil {
 		return nil, err
 	}
-	result := collection.FindOne(context.TODO(), bson.D{{"username", username}})
+	result := collection.FindOne(ctx, bson.D{{"username", username}})
 	if err := result.Err(); err != nil {
 		return nil, err
 	}
@@ -27,6 +27,6 @@ func (c *MongoUsersContainer) Get(username string) (*auth.User, error) {
 	return user, nil
 }
 
-func (c *MongoUsersContainer) Add(user *auth.User) error {
+func (c *MongoUsersContainer) Add(ctx context.Context, user *auth.User) error {
 	return fmt.Errorf("Function Add not implemented")
 }

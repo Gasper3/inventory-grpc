@@ -22,15 +22,15 @@ type InventoryServer struct {
 }
 
 func (s *InventoryServer) AddItem(
-	context context.Context,
+	ctx context.Context,
 	request *rpc.InventoryRequest,
 ) (*rpc.SimpleResponse, error) {
 	t := request.GetItem()
 
-	err := s.Container.Add(t)
+	err := s.Container.Add(ctx, t)
 	if err != nil {
 		slog.Error("Error while adding new item", "originalError", err)
-		return nil, err
+		return nil, status.Error(codes.Internal, "Error while adding new item")
 	}
 
 	slog.Info("Received new item", "name", t.Name)
@@ -38,11 +38,14 @@ func (s *InventoryServer) AddItem(
 	return &rpc.SimpleResponse{Msg: fmt.Sprintf("Added: %v", t.Name)}, nil
 }
 
-func (s *InventoryServer) GetItems(context context.Context, request *rpc.Empty) (*rpc.ItemsResponse, error) {
-	items, err := s.Container.GetItems()
+func (s *InventoryServer) GetItems(
+	ctx context.Context,
+	request *rpc.Empty,
+) (*rpc.ItemsResponse, error) {
+	items, err := s.Container.GetItems(ctx)
 	if err != nil {
 		slog.Error("Error occured while fetching items", "originalErr", err)
-		return nil, err
+        return nil, status.Errorf(codes.Internal, "Error while fetching items")
 	}
 	return &rpc.ItemsResponse{Items: items}, nil
 }
@@ -51,33 +54,37 @@ func (s *InventoryServer) AddQuantity(
 	ctx context.Context,
 	request *rpc.AddQuantityRequest,
 ) (*rpc.SimpleResponse, error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	if request.GetQuantity() <= 0 {
 		return nil, status.Error(codes.InvalidArgument, "Quantity must be greater than 0")
 	}
 
-	err := s.Container.IncrementQuantity(request.GetName(), request.GetQuantity())
+	err := s.Container.IncrementQuantity(ctx, request.GetName(), request.GetQuantity())
 	if err != nil {
 		slog.Error("Error during AddQuantity", "originalErr", err)
-		return nil, err
+        return nil, status.Errorf(codes.Internal, "Error while adding quantity")
 	}
 	return &rpc.SimpleResponse{Msg: "Quantity updated"}, nil
 }
 
-func (s *InventoryServer) Search(request *rpc.SearchRequest, stream rpc.Inventory_SearchServer) error {
-    ctx := context.TODO()
-    err := s.Container.FindStream(ctx, request, func(foundItem *rpc.Item) error {
-        err := stream.Send(&rpc.SearchResponse{Item: foundItem})
-        if err != nil {
-            slog.Error("Error while sending back to stream", "originalErr", err)
-            return err
-        }
+func (s *InventoryServer) Search(
+	request *rpc.SearchRequest,
+	stream rpc.Inventory_SearchServer,
+) error {
+	err := s.Container.FindStream(stream.Context(), request, func(foundItem *rpc.Item) error {
+		err := stream.Send(&rpc.SearchResponse{Item: foundItem})
+		if err != nil {
+			slog.Error("Error while sending back to stream", "originalErr", err)
+			return status.Error(codes.Internal, "Error while sending back to stream")
+		}
 
-        return nil
-
-    })
-    if err != nil {
-        slog.Error("Error in FindStream", "originalErr", err)
-        return err
-    }
-    return nil
+		return nil
+	})
+	if err != nil {
+		slog.Error("Error in FindStream", "originalErr", err)
+		return status.Error(codes.Internal, "Error in find function")
+	}
+	return nil
 }

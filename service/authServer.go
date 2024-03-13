@@ -26,7 +26,7 @@ type AuthServer struct {
 func (s *AuthServer) GetToken(ctx context.Context, request *rpc.TokenRequest) (*rpc.TokenResponse, error) {
 	username := request.GetUsername()
 
-	user, err := s.UserContainer.Get(username)
+	user, err := s.UserContainer.Get(ctx, username)
 	if err != nil {
 		slog.Error("Error while getting user", "originalErr", err)
 		return nil, status.Error(codes.Unauthenticated, "Wrong username")
