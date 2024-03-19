@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 
 	"github.com/Gasper3/inventory-grpc/container"
@@ -13,6 +14,7 @@ import (
 
 func NewInventoryServer() *InventoryServer {
 	container := &container.MongoItemsContainer{}
+    container.PrepareItemsCollection()
 	return &InventoryServer{Container: container}
 }
 
@@ -86,5 +88,35 @@ func (s *InventoryServer) Search(
 		slog.Error("Error in FindStream", "originalErr", err)
 		return status.Error(codes.Internal, "Error in find function")
 	}
+	return nil
+}
+
+func (s *InventoryServer) AddItems(stream rpc.Inventory_AddItemsServer) error {
+	var items []*rpc.Item
+	var errors []*rpc.TotalItemsResponse_Error
+
+	for {
+		msg, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			slog.Error("Error in client-stream", "err", err)
+			return status.Error(codes.Internal, "Error while receiving message from client")
+		}
+		items = append(items, msg.GetItem())
+		err = s.Container.Add(stream.Context(), msg.GetItem())
+		if err != nil {
+			slog.Error("Error in container.Add", "err", err)
+			errors = append(errors, &rpc.TotalItemsResponse_Error{Index: int32(len(items)), Msg: fmt.Sprint(err)})
+		}
+	}
+
+	err := stream.SendAndClose(&rpc.TotalItemsResponse{TotalAdded: int32(len(items)), Items: items, Errors: errors})
+	if err != nil {
+		slog.Error("Error while sending back to client", "err", err)
+		return status.Error(codes.Internal, "Error while sending back to client")
+	}
+	slog.Info("Client streaming ended")
 	return nil
 }

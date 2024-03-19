@@ -26,6 +26,7 @@ type InventoryClient interface {
 	GetItems(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ItemsResponse, error)
 	AddQuantity(ctx context.Context, in *AddQuantityRequest, opts ...grpc.CallOption) (*SimpleResponse, error)
 	Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (Inventory_SearchClient, error)
+	AddItems(ctx context.Context, opts ...grpc.CallOption) (Inventory_AddItemsClient, error)
 }
 
 type inventoryClient struct {
@@ -95,6 +96,40 @@ func (x *inventorySearchClient) Recv() (*SearchResponse, error) {
 	return m, nil
 }
 
+func (c *inventoryClient) AddItems(ctx context.Context, opts ...grpc.CallOption) (Inventory_AddItemsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Inventory_ServiceDesc.Streams[1], "/inventory.Inventory/AddItems", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &inventoryAddItemsClient{stream}
+	return x, nil
+}
+
+type Inventory_AddItemsClient interface {
+	Send(*InventoryRequest) error
+	CloseAndRecv() (*TotalItemsResponse, error)
+	grpc.ClientStream
+}
+
+type inventoryAddItemsClient struct {
+	grpc.ClientStream
+}
+
+func (x *inventoryAddItemsClient) Send(m *InventoryRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *inventoryAddItemsClient) CloseAndRecv() (*TotalItemsResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(TotalItemsResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // InventoryServer is the server API for Inventory service.
 // All implementations must embed UnimplementedInventoryServer
 // for forward compatibility
@@ -103,6 +138,7 @@ type InventoryServer interface {
 	GetItems(context.Context, *Empty) (*ItemsResponse, error)
 	AddQuantity(context.Context, *AddQuantityRequest) (*SimpleResponse, error)
 	Search(*SearchRequest, Inventory_SearchServer) error
+	AddItems(Inventory_AddItemsServer) error
 	mustEmbedUnimplementedInventoryServer()
 }
 
@@ -121,6 +157,9 @@ func (UnimplementedInventoryServer) AddQuantity(context.Context, *AddQuantityReq
 }
 func (UnimplementedInventoryServer) Search(*SearchRequest, Inventory_SearchServer) error {
 	return status.Errorf(codes.Unimplemented, "method Search not implemented")
+}
+func (UnimplementedInventoryServer) AddItems(Inventory_AddItemsServer) error {
+	return status.Errorf(codes.Unimplemented, "method AddItems not implemented")
 }
 func (UnimplementedInventoryServer) mustEmbedUnimplementedInventoryServer() {}
 
@@ -210,6 +249,32 @@ func (x *inventorySearchServer) Send(m *SearchResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _Inventory_AddItems_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(InventoryServer).AddItems(&inventoryAddItemsServer{stream})
+}
+
+type Inventory_AddItemsServer interface {
+	SendAndClose(*TotalItemsResponse) error
+	Recv() (*InventoryRequest, error)
+	grpc.ServerStream
+}
+
+type inventoryAddItemsServer struct {
+	grpc.ServerStream
+}
+
+func (x *inventoryAddItemsServer) SendAndClose(m *TotalItemsResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *inventoryAddItemsServer) Recv() (*InventoryRequest, error) {
+	m := new(InventoryRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // Inventory_ServiceDesc is the grpc.ServiceDesc for Inventory service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -235,6 +300,11 @@ var Inventory_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "Search",
 			Handler:       _Inventory_Search_Handler,
 			ServerStreams: true,
+		},
+		{
+			StreamName:    "AddItems",
+			Handler:       _Inventory_AddItems_Handler,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "inventory.proto",

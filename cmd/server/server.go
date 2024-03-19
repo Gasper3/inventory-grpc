@@ -21,6 +21,7 @@ var (
 	methodsRoles = map[string][]string{
 		"/inventory.Inventory/AddQuantity": {"admin"},
 		"/inventory.Inventory/GetItems":    {"admin"},
+		"/inventory.Inventory/AddItems":    {"admin"},
 		"/authentication.Auth/GetToken":    {"all"},
 	}
 )

@@ -9,6 +9,7 @@ service Inventory {
     rpc GetItems(Empty) returns (ItemsResponse) {}
     rpc AddQuantity(AddQuantityRequest) returns (SimpleResponse) {}
     rpc Search(SearchRequest) returns (stream SearchResponse) {}
+    rpc AddItems(stream InventoryRequest) returns (TotalItemsResponse) {}
 }
 
 message Empty {}
@@ -30,9 +31,21 @@ message ItemsResponse {
     repeated Item items=1;
 }
 
+message TotalItemsResponse {
+    message Error {
+        int32 index=1;
+        string msg=2;
+    }
+
+    int32 totalAdded=1;
+    repeated Item items=2;
+    repeated Error errors=3;
+}
+
 message Item {
     string name=1;
     int32 quantity=2;
+    int32 code=3;
 }
 
 message SearchRequest {
