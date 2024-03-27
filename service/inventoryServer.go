@@ -12,13 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func NewInventoryServer(logger *slog.Logger) *InventoryServer {
-	container := &container.MongoItemsContainer{}
-	err := container.PrepareItemsCollection()
-	if err != nil {
-		// TODO: panic or handle this error. App should not start without this
-		logger.Error("Error while preparing Mongo collection", "err", err)
-	}
+func NewInventoryServer(logger *slog.Logger, container container.ItemsContainer) *InventoryServer {
 	return &InventoryServer{Container: container, Logger: logger}
 }
 

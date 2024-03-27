@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Gasper3/inventory-grpc/auth"
+	"github.com/Gasper3/inventory-grpc/container"
 	"github.com/Gasper3/inventory-grpc/rpc"
 	"github.com/Gasper3/inventory-grpc/service"
 	"google.golang.org/grpc"
@@ -63,6 +64,13 @@ func main() {
 	}
 	loggerInterceptor := service.NewLoggerInterceptor(logger)
 
+	container := &container.MongoItemsContainer{}
+	err = container.PrepareItemsCollection()
+	if err != nil {
+		logger.Error("Error while preparing Mongo collection", "err", err)
+		return
+	}
+
 	creds, err := credentials.NewServerTLSFromFile("cert/server-cert.pem", "cert/server-key.pem")
 	if err != nil {
 		fmt.Printf(fmt.Sprintf("Failed to create credentails: %v", err))
@@ -76,7 +84,7 @@ func main() {
 	)
 
 	rpc.RegisterAuthServer(s, service.NewAuthServer(jwtManager))
-	rpc.RegisterInventoryServer(s, service.NewInventoryServer(logger))
+	rpc.RegisterInventoryServer(s, service.NewInventoryServer(logger, container))
 	reflection.Register(s)
 
 	logger.Info(fmt.Sprintf("Server listens on %v", lis.Addr()))
