@@ -7,11 +7,26 @@ import (
 
 	"github.com/Gasper3/inventory-grpc/rpc"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type MongoItemsContainer struct {
 	mongoClient MongoClient
 	Items       []rpc.Item
+}
+
+func (c *MongoItemsContainer) PrepareItemsCollection() error {
+	ctx := context.TODO()
+	coll, err := c.mongoClient.GetCollection("items")
+	if err != nil {
+		return err
+	}
+	_, err = coll.Indexes().CreateOne(
+		ctx,
+		mongo.IndexModel{Keys: bson.D{{"code", 1}}, Options: options.Index().SetUnique(true)},
+	)
+	return err
 }
 
 func (c *MongoItemsContainer) Add(ctx context.Context, i *rpc.Item) error {
@@ -21,19 +36,6 @@ func (c *MongoItemsContainer) Add(ctx context.Context, i *rpc.Item) error {
 	}
 	_, err = collection.InsertOne(ctx, i)
 	return err
-}
-
-func (c *MongoItemsContainer) GetItemsAsString(ctx context.Context) string {
-	items, err := c.GetItems(ctx)
-	if err != nil {
-		return ""
-	}
-
-	result := ""
-	for _, item := range items {
-		result += fmt.Sprintf("{Name: %v, Quantity: %v}", item.Name, item.Quantity)
-	}
-	return result
 }
 
 func (c *MongoItemsContainer) GetItems(ctx context.Context) ([]*rpc.Item, error) {
@@ -106,7 +108,7 @@ func (c *MongoItemsContainer) FindStream(
 
 	cur, err := collection.Find(ctx, bson.M{
 		"$and": bson.A{
-			bson.M{"name": filter.GetName()},
+			// bson.M{"name": filter.GetName()},
 			bson.M{"quantity": bson.M{"$lte": filter.GetMaxQuantity()}},
 			bson.M{"quantity": bson.M{"$gte": filter.GetMinQuantity()}},
 		},

@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"os"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -9,16 +10,24 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const MongoUrl = "mongodb://admin:pass@127.0.0.1:27017/"
+const DefaultMongoUrl = "mongodb://admin:pass@127.0.0.1:27017/"
 
 type MongoClient struct {
 	client *mongo.Client
 }
 
+func GetMongoUrl(key string, def string) string {
+    url, ok := os.LookupEnv("MONGO_URL")
+    if ok {
+        return url
+    }
+    return def
+}
+
 func (c *MongoClient) Connect() (*mongo.Client, error) {
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
 	opts := options.Client().
-		ApplyURI(MongoUrl).
+		ApplyURI(GetMongoUrl("MONGO_URL", DefaultMongoUrl)).
 		SetServerAPIOptions(serverAPI)
 
 	client, err := mongo.Connect(context.TODO(), opts)
