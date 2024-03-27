@@ -80,7 +80,7 @@ func (c *inventoryClient) Search(ctx context.Context, in *SearchRequest, opts ..
 }
 
 type Inventory_SearchClient interface {
-	Recv() (*SearchResponse, error)
+	Recv() (*Item, error)
 	grpc.ClientStream
 }
 
@@ -88,8 +88,8 @@ type inventorySearchClient struct {
 	grpc.ClientStream
 }
 
-func (x *inventorySearchClient) Recv() (*SearchResponse, error) {
-	m := new(SearchResponse)
+func (x *inventorySearchClient) Recv() (*Item, error) {
+	m := new(Item)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -237,7 +237,7 @@ func _Inventory_Search_Handler(srv interface{}, stream grpc.ServerStream) error 
 }
 
 type Inventory_SearchServer interface {
-	Send(*SearchResponse) error
+	Send(*Item) error
 	grpc.ServerStream
 }
 
@@ -245,7 +245,7 @@ type inventorySearchServer struct {
 	grpc.ServerStream
 }
 
-func (x *inventorySearchServer) Send(m *SearchResponse) error {
+func (x *inventorySearchServer) Send(m *Item) error {
 	return x.ServerStream.SendMsg(m)
 }
 

@@ -75,7 +75,7 @@ func (s *InventoryServer) Search(
 	stream rpc.Inventory_SearchServer,
 ) error {
 	err := s.Container.FindStream(stream.Context(), request, func(foundItem *rpc.Item) error {
-		err := stream.Send(&rpc.SearchResponse{Item: foundItem})
+		err := stream.Send(foundItem)
 		if err != nil {
 			s.Logger.Error("inventory.Search send back to client", "err", err)
 			return status.Error(codes.Internal, "Error while sending back to stream")

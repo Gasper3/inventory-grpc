@@ -8,7 +8,7 @@ service Inventory {
     rpc AddItem(InventoryRequest) returns (SimpleResponse) {}
     rpc GetItems(Empty) returns (ItemsResponse) {}
     rpc AddQuantity(AddQuantityRequest) returns (SimpleResponse) {}
-    rpc Search(SearchRequest) returns (stream SearchResponse) {}
+    rpc Search(SearchRequest) returns (stream Item) {}
     rpc AddItems(stream InventoryRequest) returns (TotalItemsResponse) {}
 }
 
