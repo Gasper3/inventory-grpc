@@ -18,6 +18,7 @@ import (
 
 var (
 	port         = flag.Int("port", 8000, "Server port")
+	logPath      = flag.String("logPath", "./logs/logs.log", "Path where log file is stored")
 	methodsRoles = map[string][]string{
 		"/inventory.Inventory/AddQuantity": {"admin"},
 		"/inventory.Inventory/GetItems":    {"admin"},
@@ -34,33 +35,52 @@ const (
 func main() {
 	flag.Parse()
 
-	lis, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", *port))
+	addr := fmt.Sprintf("127.0.0.1:%d", *port)
+	lis, err := net.Listen("tcp", addr)
 	if err != nil {
-		slog.Error("Failed to listen", "originalErr", err)
+		slog.Error("Failed to listen", "err", err)
+		return
 	}
 
 	secretKey, ok := os.LookupEnv(SecretKeyName)
 	if !ok {
-		slog.Warn(fmt.Sprintf("Using default secretKey. It's recommended to create `%s` env variable", SecretKeyName))
+		slog.Warn(
+			fmt.Sprintf(
+				"Using default secretKey. It's recommended to create `%s` env variable",
+				SecretKeyName,
+			),
+		)
 		secretKey = "default-secret-key"
 	}
 
 	jwtManager := auth.NewJWTManager(secretKey, tokenDuration)
 	authInterceptor := auth.NewAuthInterceptor(*jwtManager, methodsRoles)
 
-    creds, err := credentials.NewServerTLSFromFile("cert/server-cert.pem", "cert/server-key.pem")
-    if err != nil {
-        slog.Error("Failed to create credentials", "originalErr", err)
-    }
+	logger, err := service.NewLogger(*logPath)
+	if err != nil {
+		fmt.Printf("Failed to create logger: %v", err)
+		return
+	}
+	loggerInterceptor := service.NewLoggerInterceptor(logger)
 
-	s := grpc.NewServer(grpc.UnaryInterceptor(authInterceptor.Unary()), grpc.Creds(creds))
+	creds, err := credentials.NewServerTLSFromFile("cert/server-cert.pem", "cert/server-key.pem")
+	if err != nil {
+		fmt.Printf(fmt.Sprintf("Failed to create credentails: %v", err))
+		return
+	}
+
+	s := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(authInterceptor.Unary(), loggerInterceptor.Unary()),
+		grpc.ChainStreamInterceptor(loggerInterceptor.Stream()),
+		grpc.Creds(creds),
+	)
 
 	rpc.RegisterAuthServer(s, service.NewAuthServer(jwtManager))
-	rpc.RegisterInventoryServer(s, service.NewInventoryServer())
+	rpc.RegisterInventoryServer(s, service.NewInventoryServer(logger))
 	reflection.Register(s)
 
-	slog.Info(fmt.Sprintf("Server listens on %v", lis.Addr()))
+	logger.Info(fmt.Sprintf("Server listens on %v", lis.Addr()))
 	if err := s.Serve(lis); err != nil {
-		slog.Error("Failed to serve", "originalErr", err)
+		logger.Error("Failed to serve", "originalErr", err)
 	}
 }
