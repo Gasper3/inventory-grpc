@@ -3,6 +3,7 @@ package container
 import (
 	"context"
 	"os"
+	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -17,18 +18,19 @@ type MongoClient struct {
 }
 
 func GetMongoUrl(key string, def string) string {
-    url, ok := os.LookupEnv("MONGO_URL")
-    if ok {
-        return url
-    }
-    return def
+	url, ok := os.LookupEnv("MONGO_URL")
+	if ok {
+		return url
+	}
+	return def
 }
 
 func (c *MongoClient) Connect() (*mongo.Client, error) {
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
 	opts := options.Client().
 		ApplyURI(GetMongoUrl("MONGO_URL", DefaultMongoUrl)).
-		SetServerAPIOptions(serverAPI)
+		SetServerAPIOptions(serverAPI).
+        SetMaxConnIdleTime(5 * time.Minute)
 
 	client, err := mongo.Connect(context.TODO(), opts)
 	if err != nil {
@@ -42,6 +44,7 @@ func (c *MongoClient) Disconnect() error {
 	if err != nil {
 		return status.Errorf(codes.Internal, "Failed to disconnect from MongoDB: %v", err)
 	}
+	c.client = nil
 	return nil
 }
 

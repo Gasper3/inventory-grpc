@@ -62,7 +62,7 @@ func (s *InventoryServer) AddQuantity(
 		return nil, status.Error(codes.InvalidArgument, "Quantity must be greater than 0")
 	}
 
-	err := s.Container.IncrementQuantity(ctx, request.GetName(), request.GetQuantity())
+	err := s.Container.IncrementQuantity(ctx, request.GetCode(), request.GetQuantity())
 	if err != nil {
 		s.Logger.Error("inventory.AddQuantity", "err", err)
 		return nil, status.Errorf(codes.Internal, "Error while adding quantity")

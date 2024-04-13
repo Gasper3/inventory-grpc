@@ -2,8 +2,6 @@ package container
 
 import (
 	"context"
-	"fmt"
-	"log"
 
 	"github.com/Gasper3/inventory-grpc/rpc"
 	"go.mongodb.org/mongo-driver/bson"
@@ -19,6 +17,8 @@ type MongoItemsContainer struct {
 func (c *MongoItemsContainer) PrepareItemsCollection() error {
 	ctx := context.TODO()
 	coll, err := c.mongoClient.GetCollection("items")
+	defer c.mongoClient.Disconnect()
+
 	if err != nil {
 		return err
 	}
@@ -31,6 +31,8 @@ func (c *MongoItemsContainer) PrepareItemsCollection() error {
 
 func (c *MongoItemsContainer) Add(ctx context.Context, i *rpc.Item) error {
 	collection, err := c.mongoClient.GetCollection("items")
+	defer c.mongoClient.Disconnect()
+
 	if err != nil {
 		return err
 	}
@@ -40,6 +42,8 @@ func (c *MongoItemsContainer) Add(ctx context.Context, i *rpc.Item) error {
 
 func (c *MongoItemsContainer) GetItems(ctx context.Context) ([]*rpc.Item, error) {
 	collection, err := c.mongoClient.GetCollection("items")
+	defer c.mongoClient.Disconnect()
+
 	if err != nil {
 		return nil, err
 	}
@@ -57,20 +61,21 @@ func (c *MongoItemsContainer) GetItems(ctx context.Context) ([]*rpc.Item, error)
 	return items, nil
 }
 
-func (c *MongoItemsContainer) IncrementQuantity(ctx context.Context, name string, val int32) error {
+func (c *MongoItemsContainer) IncrementQuantity(ctx context.Context, code int32, val int32) error {
 	collection, err := c.mongoClient.GetCollection("items")
+	defer c.mongoClient.Disconnect()
+
 	if err != nil {
 		return err
 	}
 
 	_, err = collection.UpdateOne(
 		ctx,
-		bson.M{"name": name},
-		bson.M{"quantity": bson.M{"$inc": val}},
+		bson.M{"code": code},
+		bson.M{"$inc": bson.M{"quantity": val}},
 	)
 	if err != nil {
-		log.Printf("Failed to increment quantity -> %v", err)
-		return fmt.Errorf("Failed to increment quantity -> %v", err)
+		return err
 	}
 
 	return nil
@@ -78,6 +83,8 @@ func (c *MongoItemsContainer) IncrementQuantity(ctx context.Context, name string
 
 func (c *MongoItemsContainer) Get(ctx context.Context, name string) (*rpc.Item, error) {
 	collection, err := c.mongoClient.GetCollection("items")
+	defer c.mongoClient.Disconnect()
+
 	if err != nil {
 		return nil, err
 	}
@@ -99,18 +106,24 @@ func (c *MongoItemsContainer) Get(ctx context.Context, name string) (*rpc.Item, 
 func (c *MongoItemsContainer) FindStream(
 	ctx context.Context,
 	filter *rpc.SearchRequest,
-	found func(*rpc.Item) error,
+	foundFunc func(*rpc.Item) error,
 ) error {
 	collection, err := c.mongoClient.GetCollection("items")
+	defer c.mongoClient.Disconnect()
+
 	if err != nil {
 		return err
 	}
 
 	cur, err := collection.Find(ctx, bson.M{
-		"$and": bson.A{
-			// bson.M{"name": filter.GetName()},
-			bson.M{"quantity": bson.M{"$lte": filter.GetMaxQuantity()}},
-			bson.M{"quantity": bson.M{"$gte": filter.GetMinQuantity()}},
+		"$or": bson.A{
+			bson.M{"code": filter.GetCode()},
+			bson.M{
+				"$and": bson.A{
+					bson.M{"quantity": bson.M{"$lte": filter.GetMaxQuantity()}},
+					bson.M{"quantity": bson.M{"$gte": filter.GetMinQuantity()}},
+				},
+			},
 		},
 	})
 	if err != nil {
@@ -128,7 +141,7 @@ func (c *MongoItemsContainer) FindStream(
 			return err
 		}
 
-		err = found(&item)
+		err = foundFunc(&item)
 		if err != nil {
 			return err
 		}

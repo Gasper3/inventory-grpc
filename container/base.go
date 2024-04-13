@@ -16,7 +16,7 @@ type ItemsContainer interface {
 	Container[rpc.Item]
 
 	GetItems(context.Context) ([]*rpc.Item, error)
-	IncrementQuantity(context.Context, string, int32) error
+	IncrementQuantity(context.Context, int32, int32) error
     FindStream(context.Context, *rpc.SearchRequest, func(*rpc.Item) error) error
 }
 

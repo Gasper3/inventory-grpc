@@ -10,6 +10,7 @@ service Inventory {
     rpc AddQuantity(AddQuantityRequest) returns (SimpleResponse) {}
     rpc Search(SearchRequest) returns (stream Item) {}
     rpc AddItems(stream InventoryRequest) returns (TotalItemsResponse) {}
+    rpc UpdateItems(stream Item) returns (stream Item) {}
 }
 
 message Empty {}
@@ -19,7 +20,7 @@ message InventoryRequest {
 }
 
 message AddQuantityRequest {
-    string name=1;
+    int32 code=1;
     int32 quantity=2;
 }
 
@@ -49,11 +50,8 @@ message Item {
 }
 
 message SearchRequest {
-    string name=1;
+    optional int32 code=1;
     int32 min_quantity=2;
     int32 max_quantity=3;
 }
 
-message SearchResponse {
-    Item item=1;
-}
