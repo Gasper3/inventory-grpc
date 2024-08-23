@@ -9,15 +9,15 @@ import (
 )
 
 func NewInMemoryContainer() *InMemoryContainer {
-	return &InMemoryContainer{Items: make(map[string]*rpc.Item)}
+	return &InMemoryContainer{Items: make(map[int32]*rpc.Item)}
 }
 
 type InMemoryContainer struct {
-	Items map[string]*rpc.Item
+	Items map[int32]*rpc.Item
 }
 
 func (c *InMemoryContainer) Add(ctx context.Context, i *rpc.Item) error {
-	c.Items[i.GetName()] = i
+	c.Items[i.GetCode()] = i
 	return nil
 }
 
@@ -37,10 +37,10 @@ func (c *InMemoryContainer) GetItems(ctx context.Context) ([]*rpc.Item, error) {
 	return result, nil
 }
 
-func (c *InMemoryContainer) IncrementQuantity(ctx context.Context, name string, n int32) error {
-	i, ok := c.Items[name]
+func (c *InMemoryContainer) IncrementQuantity(ctx context.Context, code int32, n int32) error {
+	i, ok := c.Items[code]
 	if !ok {
-		return errors.New(fmt.Sprintf("Item %v does not exist", name))
+		return errors.New(fmt.Sprintf("Item %v does not exist", code))
 	}
 
 	i.Quantity += n

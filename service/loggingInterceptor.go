@@ -11,12 +11,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-type Type int
-
-type LoggerOpts struct {
-	FilePath string
-}
-
 func NewLogger(logFilePath string) (*slog.Logger, error) {
 	fpath, err := filepath.Abs(logFilePath)
 	if err != nil {

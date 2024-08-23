@@ -10,7 +10,7 @@ import (
 )
 
 func TestGetItems(t *testing.T) {
-	items := map[string]*rpc.Item{"axe": {Name: "axe", Quantity: 1}}
+	items := map[int32]*rpc.Item{123: {Name: "axe", Quantity: 1, Code: 123}}
 
 	container := container.NewInMemoryContainer()
 	container.Items = items
